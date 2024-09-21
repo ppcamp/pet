@@ -1,15 +1,15 @@
-//go:build !windows
+//go:build windows
 
 package runner
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
-	"strconv"
+	"syscall"
 
 	"github.com/knqyf263/pet/config"
-	"github.com/knqyf263/pet/path"
 )
 
 func Run(command string, r io.Reader, w io.Writer) error {
@@ -18,15 +18,11 @@ func Run(command string, r io.Reader, w io.Writer) error {
 		line := append(config.Conf.General.Cmd, command)
 		cmd = exec.Command(line[0], line[1:]...)
 	} else {
-		cmd = exec.Command("sh", "-c", command)
+		cmd = exec.Command("cmd.exe")
+		cmd.SysProcAttr = &syscall.SysProcAttr{CmdLine: fmt.Sprintf("/c \"%s\"", command)}
 	}
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = w
 	cmd.Stdin = r
 	return cmd.Run()
-}
-
-func editFile(command string, filePath path.AbsolutePath, startingLine int) error {
-	command += " +" + strconv.Itoa(startingLine) + " " + filePath.Get()
-	return run(command, os.Stdin, os.Stdout)
 }
